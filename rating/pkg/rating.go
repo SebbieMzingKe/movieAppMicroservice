@@ -16,10 +16,10 @@ type UserID string
 // RatingValue defines a value for a rating record
 type RatingValue int
 
-// Rating defines an individual rating created by aa user for some record
+// Rating defines an individual rating created by a user for some record
 type Rating struct {
-	RecordId string `json:"recordId"`
-	RecordType string`json:"recordType"`
-	UserID UserID `json:"userId"`
-	Value RatingValue `json:"value"`
+	RecordId   string      `json:"recordId"`
+	RecordType string      `json:"recordType"`
+	UserID     UserID      `json:"userId"`
+	Value      RatingValue `json:"value"`
 }
