@@ -12,7 +12,7 @@ type Registry interface {
 	Register(ctx context.Context, instanceId string, serviceName string, hostPort string) error
 	Deregister(ctx context.Context, instanceId string, serviceName string) error
 	ServiceAddresses(ctx context.Context, serviceId string) ([]string, error)
-	ReportHealthyStatus(instanceId string, serviceName string) error
+	ReportHealthyState(instanceId string, serviceName string) error
 }
 
 var ErrNotFound = errors.New("no service addresses found")

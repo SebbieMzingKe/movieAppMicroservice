@@ -50,7 +50,7 @@ func (r *Registry) Deregister(ctx context.Context, instId string, sName string) 
 }
 
 
-func (r *Registry) ReportHealthyStatus(instID string, sName string) error {
+func (r *Registry) ReportHealthyState(instID string, sName string) error {
 	r.Lock()
 	defer r.Unlock()
 
