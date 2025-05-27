@@ -42,8 +42,12 @@ func (g *Gateway) Get(ctx context.Context, id string) (*metadatamodel.Metadata, 
 	}
 
 	url := "http://" + addrs[rand.Intn(len(addrs))] + "/metadata"
-	log.Printf("Calling metadadata service. Request: GET " + url)
+	log.Printf("Calling metadadata service. Request: GET %s", url)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
+
+	if err != nil {
+		return nil, err
+	}
 
 	req = req.WithContext(ctx)
 	values := req.URL.Query()
