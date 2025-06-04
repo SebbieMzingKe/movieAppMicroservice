@@ -1,6 +1,6 @@
 package model
 
-import model "movieapp.com/metadata/pkg"
+import model "movieapp.com/metadata/pkg/model"
 
 // moviedetails include movie metadata and its aggregated rating
 type MovieDetails struct {

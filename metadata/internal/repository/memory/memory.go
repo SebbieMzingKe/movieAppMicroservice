@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"movieapp.com/metadata/internal/repository"
-	model "movieapp.com/metadata/pkg"
+	model "movieapp.com/metadata/pkg/model"
 )
 
 // repository defines a memory movie metadata repository
