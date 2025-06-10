@@ -67,7 +67,7 @@ func main() {
 	gen.RegisterMetadataServiceServer(srv, h)
 	srv.Serve(lis)
 	
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
+	if err := srv.Serve(lis); err != nil {
 		panic(err)
 	}
 }
