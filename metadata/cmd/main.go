@@ -5,11 +5,14 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"time"
 
+	"google.golang.org/grpc"
+	"movieapp.com/gen"
 	"movieapp.com/metadata/internal/controller/metadata"
-	httphandler "movieapp.com/metadata/internal/handler/http"
+	grpchandler "movieapp.com/metadata/internal/handler/grpc"
 	"movieapp.com/metadata/internal/repository/memory"
 	"movieapp.com/pkg/discovery"
 	"movieapp.com/pkg/discovery/consul"
@@ -50,11 +53,19 @@ func main() {
 
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
+	log.Println("Starting the movie metadata service")
 	repo := memory.New()
-
 	svc := metadata.New(repo)
-	h := httphandler.New(svc)
-	http.Handle("/metadata", http.HandlerFunc(h.GetMetadata))
+	h := grpchandler.New(svc)
+
+	lis, err := net.Listen("tcp", "localhost:8-81")
+	if err != nil {
+		log.Fatalf("failed to listen %v", err)
+	}
+
+	srv := grpc.NewServer()
+	gen.RegisterMetadataServiceServer(srv, h)
+	srv.Serve(lis)
 	
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
 		panic(err)
