@@ -15,8 +15,8 @@ import (
 	"movieapp.com/pkg/discovery/consul"
 	"movieapp.com/rating/internal/controller/rating"
 	grpchandler "movieapp.com/rating/internal/handler/grpc"
-	"movieapp.com/rating/internal/ingester/kafka"
-	"movieapp.com/rating/internal/repository/memory"
+	// "movieapp.com/rating/internal/ingester/kafka"
+	"movieapp.com/rating/internal/repository/mysql"
 )
 
 const serviceName = "rating"
@@ -55,13 +55,16 @@ func main() {
 
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
-	repo := memory.New()
-	ingester, err := kafka.NewIngester("localhost", "rating", "ratings")
+	repo, err := mysql.New()
 	if err != nil {
-		log.Fatalf("failed to initialize ingester: %v", err)
+		panic(err)
 	}
+	// ingester, err := kafka.NewIngester("localhost", "rating", "ratings")
+	// if err != nil {
+	// 	log.Fatalf("failed to initialize ingester: %v", err)
+	// }
 
-	svc := rating.New(repo, ingester)
+	svc := rating.New(repo, nil)
 	h := grpchandler.New(svc)
 	
 	lis, err := net.Listen("tcp", "localhost:8082")
