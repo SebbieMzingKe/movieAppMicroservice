@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"movieapp.com/gen"
 	"movieapp.com/metadata/internal/controller/metadata"
 	grpchandler "movieapp.com/metadata/internal/handler/grpc"
@@ -65,6 +66,8 @@ func main() {
 	srv := grpc.NewServer()
 	gen.RegisterMetadataServiceServer(srv, h)
 	srv.Serve(lis)
+
+	reflection.Register(srv)
 	
 	if err := srv.Serve(lis); err != nil {
 		panic(err)

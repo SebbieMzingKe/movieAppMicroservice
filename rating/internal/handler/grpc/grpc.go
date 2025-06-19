@@ -40,7 +40,7 @@ func (h *Handler) PutRating(ctx context.Context, req *gen.PutRatingRequest) (*ge
 		return nil, status.Errorf(codes.InvalidArgument, "nil request or empty user id or record id")
 	}
 
-	if err := h.svc.PutRating(ctx, model.RecordId(req.RecordId), model.RecordType(req.RecordType), &model.Rating{UserID: model.UserID(req.UserId), Value: model.RatingValue(req.RecordValue)}); err != nil {
+	if err := h.svc.PutRating(ctx, model.RecordId(req.RecordId), model.RecordType(req.RecordType), &model.Rating{UserID: model.UserID(req.UserId), Value: model.RatingValue(req.RatingValue)}); err != nil {
 		return nil, err
 	}
 	return &gen.PutRatingResponse{}, nil

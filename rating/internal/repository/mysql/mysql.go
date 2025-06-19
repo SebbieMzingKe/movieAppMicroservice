@@ -26,7 +26,7 @@ func New() (*Repository, error) {
 // retrive all ratings for a given record
 func (r *Repository) Get(ctx context.Context, recordId model.RecordId, recordType model.RecordType) ([]model.Rating, error) {
 
-	rows, err := r.db.QueryContext(ctx, "SELECT user_id, value FROM ratings WHERE id = ? AND record_type = ?", recordId, recordType)
+	rows, err := r.db.QueryContext(ctx, "SELECT user_id, value FROM ratings WHERE record_id = ? AND record_type = ?", recordId, recordType)
 	if err != nil {
 		return nil, err
 	}

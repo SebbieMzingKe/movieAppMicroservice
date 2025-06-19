@@ -50,8 +50,8 @@ message GetAggregatedRatingResponse {
 message PutRatingRequest {
   string user_id = 1;
   string record_id = 2;
-  int32 record_type = 3;
-  int32 record_value = 4;
+  string record_type = 3;
+  int32 rating_value = 4;
 }
 
 
