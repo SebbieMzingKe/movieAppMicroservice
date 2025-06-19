@@ -29,7 +29,7 @@ func main() {
 	flag.Parse()
 
 	log.Printf("Starting the metadata service on port %d", port)
-	registry, err := consul.NewRegistry("localhost:8500")
+	registry, err := consul.NewRegistry("consul-consul-server:8500")
 
 	if err != nil {
 		panic(err)
@@ -55,7 +55,6 @@ func main() {
 
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
-	log.Println("Starting the movie metadata service")
 	f, err := os.Open("base.yaml")
 	if err != nil {
 		panic(err)
@@ -72,7 +71,7 @@ func main() {
 	svc := metadata.New(repo)
 	h := grpchandler.New(svc)
 
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", cfg.ApiConfig.Port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
 	if err != nil {
 		log.Fatalf("failed to listen %v", err)
 	}
