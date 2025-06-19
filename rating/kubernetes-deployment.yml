@@ -21,7 +21,7 @@ spec:
       containers:
         - name: rating
           image: sebbiemzing/rating:1.0.0
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
 
           ports:
             - containerPort: 8082

@@ -21,7 +21,7 @@ spec:
       containers:
         - name: movie
           image: sebbiemzing/movie:1.0.0
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
 
           ports:
             - containerPort: 8083
