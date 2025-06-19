@@ -7,10 +7,12 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"gopkg.in/yaml.v3"
 	"movieapp.com/gen"
 	"movieapp.com/pkg/discovery"
 	"movieapp.com/pkg/discovery/consul"
@@ -30,6 +32,19 @@ func main() {
 	flag.IntVar(&port, "port", 8082, "API handler port")
 	flag.Parse()
 
+	f, err := os.Open("base.yaml")
+
+	if err != nil {
+		panic(err)
+	}
+
+	var cfg config
+
+	if err := yaml.NewDecoder(f).Decode(&cfg); err != nil {
+		panic(err)
+	}
+
+	port = cfg.ApiConfig.Port
 	log.Printf("Starting the rating service on port %d", port)
 	registry, err := consul.NewRegistry("localhost:8500")
 

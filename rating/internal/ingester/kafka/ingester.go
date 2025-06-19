@@ -11,7 +11,7 @@ import (
 
 // ingester defines a kafka ingester
 type Ingester struct {
-	consumer kafka.Consumer
+	consumer *kafka.Consumer
 	topic    string
 }
 
@@ -26,7 +26,7 @@ func NewIngester(addr string, groupID string, topic string) (*Ingester, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Ingester{*consumer, topic}, nil
+	return &Ingester{consumer, topic}, nil
 }
 
 // ingest starts ingestion from kafka and returns a channel containing rating events representing the data consumed from the topic

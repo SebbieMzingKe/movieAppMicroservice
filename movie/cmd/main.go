@@ -6,15 +6,17 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"gopkg.in/yaml.v3"
 	"movieapp.com/gen"
 	"movieapp.com/movie/internal/controller/movie"
 	metadatagateway "movieapp.com/movie/internal/gateway/metadata/http"
-	grpchandler "movieapp.com/movie/internal/handler/grpc"
 	ratinggateway "movieapp.com/movie/internal/gateway/rating/http"
+	grpchandler "movieapp.com/movie/internal/handler/grpc"
 	"movieapp.com/pkg/discovery"
 	"movieapp.com/pkg/discovery/consul"
 )
@@ -27,6 +29,19 @@ func main() {
 
 	flag.IntVar(&port, "port", 8083, "API handler port")
 	flag.Parse()
+	f, err := os.Open("base.yaml")
+
+	if err != nil {
+		panic(err)
+	}
+
+	var cfg config
+
+	if err := yaml.NewDecoder(f).Decode(&cfg); err != nil {
+		panic(err)
+	}
+
+	port = cfg.ApiConfig.Port
 
 	log.Printf("Starting the movie service on port %d", port)
 	registry, err := consul.NewRegistry("localhost:8500")
@@ -63,13 +78,14 @@ func main() {
 
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
+
 	metadataGateway := metadatagateway.New(registry)
 
 	ratingGateway := ratinggateway.New(registry)
 
 	svc := movie.New(ratingGateway, metadataGateway)
 	h := grpchandler.New(svc) 
-	lis, err := net.Listen("tcp", "localhost:8083")
+	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", cfg.ApiConfig.Port))
 
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)

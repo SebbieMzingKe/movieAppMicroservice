@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"gopkg.in/yaml.v3"
 	"movieapp.com/gen"
 	"movieapp.com/metadata/internal/controller/metadata"
 	grpchandler "movieapp.com/metadata/internal/handler/grpc"
@@ -54,11 +56,23 @@ func main() {
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
 	log.Println("Starting the movie metadata service")
+	f, err := os.Open("base.yaml")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	var cfg serviceConfig
+
+	if err := yaml.NewDecoder(f).Decode(&cfg); err != nil {
+		panic(err)
+	}
+
 	repo := memory.New()
 	svc := metadata.New(repo)
 	h := grpchandler.New(svc)
 
-	lis, err := net.Listen("tcp", "localhost:8-81")
+	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", cfg.ApiConfig.Port))
 	if err != nil {
 		log.Fatalf("failed to listen %v", err)
 	}
