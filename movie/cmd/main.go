@@ -44,7 +44,7 @@ func main() {
 	port = cfg.ApiConfig.Port
 
 	log.Printf("Starting the movie service on port %d", port)
-	registry, err := consul.NewRegistry("172.17.0.1:8500")
+	registry, err := consul.NewRegistry("consul-consul-server:8500")
 
 	if err != nil {
 		panic(err)
