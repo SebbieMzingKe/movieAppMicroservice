@@ -1,9 +1,13 @@
 package metadata
 
 import (
+	"context"
 	"errors"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	gen "movieapp.com/gen/mock/metadata/repository"
 	"movieapp.com/metadata/internal/repository"
 	"movieapp.com/metadata/pkg/model"
 )
@@ -12,19 +16,19 @@ func TestMetadata(t *testing.T) {
 	tests := []struct {
 		name       string
 		expRepoRes *model.Metadata
-		expRepErr  error
+		expRepoErr error
 		wantRes    *model.Metadata
 		wantErr    error
 	}{
 		{
-			name:      "not found",
-			expRepErr: repository.ErrNotFound,
-			wantErr:   ErrNotFound,
+			name:       "not found",
+			expRepoErr: repository.ErrNotFound,
+			wantErr:    ErrNotFound,
 		},
 		{
-			name:      "unexpected error",
-			expRepErr: errors.New("unexpected error"),
-			wantErr:   errors.New("unexpected error"),
+			name:       "unexpected error",
+			expRepoErr: errors.New("unexpected error"),
+			wantErr:    errors.New("unexpected error"),
 		},
 		{
 			name:       "success",
@@ -34,6 +38,20 @@ func TestMetadata(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {})
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			repoMock := gen.NewMockMetadataRepository(ctrl)
+			c := New(repoMock)
+			ctx := context.Background()
+			id := "id"
+
+			repoMock.EXPECT().Get(ctx, id).Return(tt.expRepoRes, tt.expRepoErr)
+			res, err := c.Get(ctx, id)
+
+			assert.Equal(t, tt.wantRes, res, tt.name)
+			assert.Equal(t, tt.wantErr, err, tt.name)
+
+		})
 	}
 }
