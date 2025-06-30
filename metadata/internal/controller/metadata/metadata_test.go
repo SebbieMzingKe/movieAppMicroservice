@@ -1,4 +1,4 @@
-package metadata
+package metadata_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	gen "movieapp.com/gen/mock/metadata/repository"
+	"movieapp.com/metadata/internal/controller/metadata"
 	"movieapp.com/metadata/internal/repository"
 	"movieapp.com/metadata/pkg/model"
 )
@@ -23,7 +24,7 @@ func TestMetadata(t *testing.T) {
 		{
 			name:       "not found",
 			expRepoErr: repository.ErrNotFound,
-			wantErr:    ErrNotFound,
+			wantErr:    metadata.ErrNotFound,
 		},
 		{
 			name:       "unexpected error",
@@ -42,7 +43,7 @@ func TestMetadata(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			repoMock := gen.NewMockMetadataRepository(ctrl)
-			c := New(repoMock)
+			c := metadata.New(repoMock)
 			ctx := context.Background()
 			id := "id"
 
