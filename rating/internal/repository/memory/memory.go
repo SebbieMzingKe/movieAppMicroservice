@@ -17,15 +17,25 @@ func New() *Repository {
 
 // Get retrives all ratings for a given record
 func (r *Repository) Get(ctx context.Context, recordId model.RecordId, recordType model.RecordType) ([]model.Rating, error) {
-	if _, ok := r.data[recordType]; !ok {
+	typeMap, ok := r.data[recordType]
+	if !ok {
 		return nil, repository.ErrNotFound
 	}
 
-	if ratings, ok := r.data[recordType][recordId]; ok || len(ratings) == 0 {
+	ratings, ok := typeMap[recordId]
+
+	if !ok || len(ratings) == 0 {
 		return nil, repository.ErrNotFound
 	}
+	// if _, ok := r.data[recordType]; !ok {
+	// 	return nil, repository.ErrNotFound
+	// }
 
-	return r.data[recordType][recordId], nil
+	// if ratings, ok := r.data[recordType][recordId]; ok || len(ratings) == 0 {
+	// 	return nil, repository.ErrNotFound
+	// }
+
+	return ratings, nil
 }
 
 // Put adds a rating for a given record

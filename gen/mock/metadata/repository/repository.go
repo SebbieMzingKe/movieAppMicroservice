@@ -49,3 +49,17 @@ func (mr *MockMetadataRepositoryMockRecorder) Get(ctx, id interface{}) *gomock.C
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockMetadataRepository)(nil).Get), ctx, id)
 }
+
+// Put mocks base method.
+func (m_2 *MockMetadataRepository) Put(ctx context.Context, id string, m *model.Metadata) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "Put", ctx, id, m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Put indicates an expected call of Put.
+func (mr *MockMetadataRepositoryMockRecorder) Put(ctx, id, m interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockMetadataRepository)(nil).Put), ctx, id, m)
+}

@@ -35,3 +35,7 @@ func (g *Gateway) GetAggregatedRating(ctx context.Context, recordID model.Record
 
 	return resp.RatingValue, nil
 }
+
+func (g *Gateway) PutRating(ctx context.Context, recordID model.RecordId, recordType model.RecordType, rating *model.Rating) error {
+	return nil
+}

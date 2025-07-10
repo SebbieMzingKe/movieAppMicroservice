@@ -3,12 +3,16 @@ package main
 import (
 	"context"
 	"log"
+	"net"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"movieapp.com/gen"
+	metadatatest "movieapp.com/metadata/pkg/testutil"
+	ratingtest "movieapp.com/rating/pkg/testutil"
+	movietest "movieapp.com/movie/pkg/testutil"
 	"movieapp.com/pkg/discovery"
 	memory "movieapp.com/pkg/discovery/memorypackage"
 )
@@ -59,7 +63,7 @@ func main() {
 
 	ratingClient := gen.NewRatingServiceClient(ratingConn)
 
-	movieConn, err := grpc.Dial(ratingSvcAddr, opts)
+	movieConn, err := grpc.Dial(movieSvcAddr, opts)
 
 	if err != nil {
 		panic(err)
@@ -152,7 +156,7 @@ func main() {
 		UserId:      userID,
 		RecordId:    m.Id,
 		RecordType:  recordTypeMovie,
-		RatingValue: firstRating,
+		RatingValue: secondRating,
 	}); err != nil {
 		log.Fatalf("put rating: %v", err)
 	}
@@ -190,13 +194,73 @@ func main() {
 }
 
 func startMetadataService(ctx context.Context, registry discovery.Registry) *grpc.Server {
-	return nil
+	log.Println("starting metadata service on " + metadataSvcAddr)
+	h := metadatatest.NewTestMetadataGRPCServer()
+	l, err := net.Listen("tcp", metadataSvcAddr)
+
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	srv := grpc.NewServer()
+	gen.RegisterMetadataServiceServer(srv, h)
+	go func() {
+		if err := srv.Serve(l); err != nil {
+			panic(err)
+		}
+	}()
+
+	id := discovery.GenerateInstanceID(metadataSvcName)
+	if err := registry.Register(ctx, id, metadataSvcName, metadataSvcAddr); err != nil {
+		panic(err)
+	}
+	return srv
 }
 
 func startRatingService(ctx context.Context, registry discovery.Registry) *grpc.Server {
-	return nil
+	log.Println("starting rating service on " + ratingSvcAddr)
+	h := ratingtest.NewTestRatingGRPCServer()
+	l, err := net.Listen("tcp", ratingSvcAddr)
+
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	srv := grpc.NewServer()
+	gen.RegisterRatingServiceServer(srv, h)
+	go func() {
+		if err := srv.Serve(l); err != nil {
+			panic(err)
+		}
+	}()
+
+	id := discovery.GenerateInstanceID(ratingSvcName)
+	if err := registry.Register(ctx, id, ratingSvcName, ratingSvcAddr); err != nil {
+		panic(err)
+	}
+	return srv
 }
 
 func startMovieService(ctx context.Context, registry discovery.Registry) *grpc.Server {
-	return nil
+	log.Println("starting movie service on " + movieSvcAddr)
+	h := movietest.NewTestMovieGRPCServer(registry)
+	l, err := net.Listen("tcp", movieSvcAddr)
+
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	srv := grpc.NewServer()
+	gen.RegisterMovieServiceServer(srv, h)
+	go func() {
+		if err := srv.Serve(l); err != nil {
+			panic(err)
+		}
+	}()
+
+	id := discovery.GenerateInstanceID(movieSvcName)
+	if err := registry.Register(ctx, id, movieSvcName, movieSvcAddr); err != nil {
+		panic(err)
+	}
+	return srv
 }
