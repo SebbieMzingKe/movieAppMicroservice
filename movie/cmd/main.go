@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/ratelimit"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"gopkg.in/yaml.v3"
@@ -22,6 +23,18 @@ import (
 )
 
 const serviceName = "movie"
+
+type limiter struct {
+	l *rate.Limiter
+}
+
+func newLimiter(limit int, burst int) *limiter {
+	return &limiter{rate.Limit(limit), nurrst}
+}
+
+func (l *limiter) Limit() bool {
+	return l.l.Allow()
+}
 
 func main() {
 
@@ -55,7 +68,7 @@ func main() {
 	// 	"rating": {"localhost:8082"},
 	// 	"movie": {"localhost:8083"},
 	// })
-	
+
 	ctx := context.Background()
 
 	instanceID := discovery.GenerateInstanceID(serviceName)
@@ -78,25 +91,27 @@ func main() {
 
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
-
 	metadataGateway := metadatagateway.New(registry)
 
 	ratingGateway := ratinggateway.New(registry)
 
 	svc := movie.New(ratingGateway, metadataGateway)
-	h := grpchandler.New(svc) 
+	h := grpchandler.New(svc)
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", cfg.ApiConfig.Port))
 
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	srv := grpc.NewServer()
+	const limit = 100
+	const burst = 100
+	l := newLimiter(100, 100)
+	srv := grpc.NewServer(grpc.UnaryInterceptor(ratelimit.UnaryServerInterceptor(l)))
 	reflection.Register(srv)
 	gen.RegisterMovieServiceServer(srv, h)
 	srv.Serve(lis)
 	// http.Handle("/movie", http.HandlerFunc(h.GetMovieDetails))
-	
+
 	if err := srv.Serve(lis); err != nil {
 		panic(err)
 	}
