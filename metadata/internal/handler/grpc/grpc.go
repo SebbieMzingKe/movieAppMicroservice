@@ -22,7 +22,7 @@ func New(ctrl *metadata.Controller) *Handler {
 
 func (h *Handler) GetMetadata(ctx context.Context, req *gen.GetMetadataRequest) (*gen.GetMetadataResponse, error) {
 	if req == nil || req.MovieId == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "nil req orempty id")
+		return nil, status.Errorf(codes.InvalidArgument, "nil req or empty id")
 	}
 
 	m, err := h.svc.Get(ctx, req.MovieId)
