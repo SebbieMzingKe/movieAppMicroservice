@@ -9,7 +9,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/grpc-ecosystem/go-grpc-middleware/ratelimit"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"gopkg.in/yaml.v3"
@@ -20,6 +19,7 @@ import (
 	grpchandler "movieapp.com/movie/internal/handler/grpc"
 	"movieapp.com/pkg/discovery"
 	"movieapp.com/pkg/discovery/consul"
+	"golang.org/x/time/rate"
 )
 
 const serviceName = "movie"
@@ -29,7 +29,7 @@ type limiter struct {
 }
 
 func newLimiter(limit int, burst int) *limiter {
-	return &limiter{rate.Limit(limit), nurrst}
+	return &limiter{rate.NewLimiter(rate.Limit(limit), burst)}
 }
 
 func (l *limiter) Limit() bool {
@@ -103,13 +103,12 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	const limit = 100
-	const burst = 100
+	// const limit = 100
+	// const burst = 100
 	l := newLimiter(100, 100)
-	srv := grpc.NewServer(grpc.UnaryInterceptor(ratelimit.UnaryServerInterceptor(l)))
+	srv := grpc.NewServer(grpc.UnaryInterceptor(rateLimitUnaryServerInterceptor(l)))
 	reflection.Register(srv)
 	gen.RegisterMovieServiceServer(srv, h)
-	srv.Serve(lis)
 	// http.Handle("/movie", http.HandlerFunc(h.GetMovieDetails))
 
 	if err := srv.Serve(lis); err != nil {
@@ -117,6 +116,20 @@ func main() {
 	}
 }
 
+// rateLimitUnaryServerInterceptor returns a grpc.UnaryServerInterceptor that applies the limiter.
+func rateLimitUnaryServerInterceptor(l *limiter) grpc.UnaryServerInterceptor {
+	return func(
+		ctx context.Context,
+		req interface{},
+		info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler,
+	) (interface{}, error) {
+		if !l.Limit() {
+			return nil, grpc.Errorf(grpc.Code(grpc.ErrServerStopped), "rate limit exceeded")
+		}
+		return handler(ctx, req)
+	}
+}
 // package main
 
 // import (
