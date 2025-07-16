@@ -8,6 +8,9 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"google.golang.org/grpc"
@@ -32,7 +35,7 @@ func main() {
 	flag.IntVar(&port, "port", 8082, "API handler port")
 	flag.Parse()
 
-	f, err := os.Open("base.yaml")
+	f, err := os.Open("rating/configs/base.yaml")
 
 	if err != nil {
 		panic(err)
@@ -49,10 +52,11 @@ func main() {
 	registry, err := consul.NewRegistry("consul-consul-server:8500")
 
 	if err != nil {
-		panic(err)
+		log.Panicln("consul",err)
 	}
 
-	ctx := context.Background()
+	// ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
 
 	instanceID := discovery.GenerateInstanceID(serviceName)
 
@@ -91,9 +95,24 @@ func main() {
 	srv := grpc.NewServer()
 	gen.RegisterRatingServiceServer(srv, h)
 	reflection.Register(srv)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		s := <- sigChan
+		cancel()
+		log.Printf("received signal %v, attempting graceful shutdown", s)
+		srv.GracefulStop()
+		log.Println("gracefully stopped the grpc server")
+	}()
 	srv.Serve(lis)
 
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
 		panic(err)
 	}
+
+	wg.Wait()
 }
