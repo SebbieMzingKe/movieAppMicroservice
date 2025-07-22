@@ -7,3 +7,7 @@ type serviceConfig struct {
 type apiConfig struct {
 	Port string `yaml:"port"`
 }
+
+type jaegerConfig struct {
+	URL string `yaml:"url"`
+}

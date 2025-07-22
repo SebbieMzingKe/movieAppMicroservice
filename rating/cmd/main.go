@@ -35,7 +35,7 @@ func main() {
 	flag.IntVar(&port, "port", 8082, "API handler port")
 	flag.Parse()
 
-	f, err := os.Open("rating/configs/base.yaml")
+	f, err := os.Open("base.yaml")
 
 	if err != nil {
 		panic(err)
@@ -47,7 +47,7 @@ func main() {
 		panic(err)
 	}
 
-	port = cfg.ApiConfig.Port
+	port = cfg.ApiConfig.Port		
 	log.Printf("Starting the rating service on port %d", port)
 	registry, err := consul.NewRegistry("consul-consul-server:8500")
 
