@@ -9,17 +9,20 @@ import (
 	"os"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"gopkg.in/yaml.v3"
 	"movieapp.com/gen"
 	"movieapp.com/movie/internal/controller/movie"
-	metadatagateway "movieapp.com/movie/internal/gateway/metadata/http"
-	ratinggateway "movieapp.com/movie/internal/gateway/rating/http"
+	metadatagateway "movieapp.com/movie/internal/gateway/metadata/grpc"
+	ratinggateway "movieapp.com/movie/internal/gateway/rating/grpc"
 	grpchandler "movieapp.com/movie/internal/handler/grpc"
 	"movieapp.com/pkg/discovery"
 	"movieapp.com/pkg/discovery/consul"
-	"golang.org/x/time/rate"
+	"movieapp.com/pkg/tracing"
 )
 
 const serviceName = "movie"
@@ -42,7 +45,7 @@ func main() {
 
 	flag.IntVar(&port, "port", 8083, "API handler port")
 	flag.Parse()
-	f, err := os.Open("base.yaml")
+	f, err := os.Open("/home/seb/Desktop/projects/movvieApp/movie/configs/base.yaml")
 
 	if err != nil {
 		panic(err)
@@ -57,7 +60,23 @@ func main() {
 	port = cfg.ApiConfig.Port
 
 	log.Printf("Starting the movie service on port %d", port)
-	registry, err := consul.NewRegistry("consul-consul-server:8500")
+
+	tp, err := tracing.NewOtlpGrpcProvider(context.Background(), cfg.Jaeger.URL, serviceName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer func() {
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	// registry, err := consul.NewRegistry("consul-consul-server:8500")
+	registry, err := consul.NewRegistry("localhost:8500")
 
 	if err != nil {
 		panic(err)
@@ -92,11 +111,23 @@ func main() {
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
 	metadataGateway := metadatagateway.New(registry)
+	if metadataGateway == nil {
+		log.Fatal("failed to create metadata gateway: gateway is nil")
+	}
 
 	ratingGateway := ratinggateway.New(registry)
+	if ratingGateway == nil {
+		log.Fatal("failed to create rating gateway: gateway is nil")
+	}
 
 	svc := movie.New(ratingGateway, metadataGateway)
 	h := grpchandler.New(svc)
+	// metadataGateway := metadatagateway.New(registry)
+
+	// ratingGateway := ratinggateway.New(registry)
+
+	// svc := movie.New(ratingGateway, metadataGateway)
+	// h := grpchandler.New(svc)
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", cfg.ApiConfig.Port))
 
 	if err != nil {
@@ -130,6 +161,7 @@ func rateLimitUnaryServerInterceptor(l *limiter) grpc.UnaryServerInterceptor {
 		return handler(ctx, req)
 	}
 }
+
 // package main
 
 // import (

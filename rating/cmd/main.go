@@ -13,12 +13,15 @@ import (
 	"syscall"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"gopkg.in/yaml.v3"
 	"movieapp.com/gen"
 	"movieapp.com/pkg/discovery"
 	"movieapp.com/pkg/discovery/consul"
+	"movieapp.com/pkg/tracing"
 	"movieapp.com/rating/internal/controller/rating"
 	grpchandler "movieapp.com/rating/internal/handler/grpc"
 
@@ -35,7 +38,7 @@ func main() {
 	flag.IntVar(&port, "port", 8082, "API handler port")
 	flag.Parse()
 
-	f, err := os.Open("base.yaml")
+	f, err := os.Open("/home/seb/Desktop/projects/movvieApp/rating/configs/base.yaml")
 
 	if err != nil {
 		panic(err)
@@ -47,12 +50,28 @@ func main() {
 		panic(err)
 	}
 
-	port = cfg.ApiConfig.Port		
+	port = cfg.ApiConfig.Port
 	log.Printf("Starting the rating service on port %d", port)
-	registry, err := consul.NewRegistry("consul-consul-server:8500")
+
+	tp, err := tracing.NewOtlpGrpcProvider(context.Background(), cfg.Jaeger.URL, serviceName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer func() {
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	// registry, err := consul.NewRegistry("consul-consul-server:8500")
+	registry, err := consul.NewRegistry("localhost:8500")
 
 	if err != nil {
-		log.Panicln("consul",err)
+		log.Panicln("consul", err)
 	}
 
 	// ctx := context.Background()
@@ -102,7 +121,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		s := <- sigChan
+		s := <-sigChan
 		cancel()
 		log.Printf("received signal %v, attempting graceful shutdown", s)
 		srv.GracefulStop()
