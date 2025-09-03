@@ -17,8 +17,8 @@ import (
 	"gopkg.in/yaml.v3"
 	"movieapp.com/gen"
 	"movieapp.com/movie/internal/controller/movie"
-	metadatagateway "movieapp.com/movie/internal/gateway/metadata/http"
-	ratinggateway "movieapp.com/movie/internal/gateway/rating/http"
+	metadatagateway "movieapp.com/movie/internal/gateway/metadata/grpc"
+	ratinggateway "movieapp.com/movie/internal/gateway/rating/grpc"
 	grpchandler "movieapp.com/movie/internal/handler/grpc"
 	"movieapp.com/pkg/discovery"
 	"movieapp.com/pkg/discovery/consul"
@@ -75,7 +75,8 @@ func main() {
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
-	registry, err := consul.NewRegistry("consul-consul-server:8500")
+	// registry, err := consul.NewRegistry("consul-consul-server:8500")
+	registry, err := consul.NewRegistry("localhost:8500")
 
 	if err != nil {
 		panic(err)
@@ -110,11 +111,23 @@ func main() {
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
 	metadataGateway := metadatagateway.New(registry)
+	if metadataGateway == nil {
+		log.Fatal("failed to create metadata gateway: gateway is nil")
+	}
 
 	ratingGateway := ratinggateway.New(registry)
+	if ratingGateway == nil {
+		log.Fatal("failed to create rating gateway: gateway is nil")
+	}
 
 	svc := movie.New(ratingGateway, metadataGateway)
 	h := grpchandler.New(svc)
+	// metadataGateway := metadatagateway.New(registry)
+
+	// ratingGateway := ratinggateway.New(registry)
+
+	// svc := movie.New(ratingGateway, metadataGateway)
+	// h := grpchandler.New(svc)
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", cfg.ApiConfig.Port))
 
 	if err != nil {

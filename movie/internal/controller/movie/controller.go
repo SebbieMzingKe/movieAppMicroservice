@@ -10,7 +10,7 @@ import (
 	ratingmodel "movieapp.com/rating/pkg"
 )
 
-// ErrNotFound is returrned when movie metadata is not found
+// ErrNotFound is returned when movie metadata is not found
 var ErrNotFound = errors.New("movie metadata not found")
 
 // service interfaces
@@ -25,32 +25,55 @@ type metadataGateway interface {
 
 // service controller
 type Controller struct {
-	ratingGateway ratingGateway
+	ratingGateway   ratingGateway
 	metadataGateway metadataGateway
 }
 
-// New ceretaes a new movie service controller
+// New creates a new movie service controller
 func New(ratingGateway ratingGateway, metadataGateway metadataGateway) *Controller {
-	return &Controller{ratingGateway, metadataGateway}
+	// Add nil checks
+	if ratingGateway == nil {
+		panic("ratingGateway cannot be nil")
+	}
+	if metadataGateway == nil {
+		panic("metadataGateway cannot be nil")
+	}
+	
+	return &Controller{ratingGateway: ratingGateway, metadataGateway: metadataGateway}
 }
 
-// getting movie rating and metadata
-// get returns aggregated rating and movie metadata
-func (c *Controller) Get(ctx context.Context, id string) (*model.MovieDetails, error ){
+// Get returns aggregated rating and movie metadata
+func (c *Controller) Get(ctx context.Context, id string) (*model.MovieDetails, error) {
+	// Add nil check for safety
+	if c.metadataGateway == nil {
+		return nil, errors.New("metadataGateway is nil")
+	}
+	
 	metadata, err := c.metadataGateway.Get(ctx, id)
-
-	if err != nil && errors.Is(err, gateway.ErrNotFound) {
-		return nil, ErrNotFound
+	if err != nil {
+		if errors.Is(err, gateway.ErrNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, err
 	}
 
 	details := &model.MovieDetails{Metadata: *metadata}
-	rating, err := c.ratingGateway.GetAggregatedRating(ctx, ratingmodel.RecordId(id), ratingmodel.RecordTypeMovie)
-
-	if err != nil && !errors.Is(err, gateway.ErrNotFound) {
-	} else if err != nil {
-		return nil, err
-	} else {
-		details.Rating = &rating
+	
+	// Add nil check for rating gateway
+	if c.ratingGateway == nil {
+		return details, nil // Return without rating if gateway is nil
 	}
+	
+	rating, err := c.ratingGateway.GetAggregatedRating(ctx, ratingmodel.RecordId(id), ratingmodel.RecordTypeMovie)
+	if err != nil {
+		if errors.Is(err, gateway.ErrNotFound) {
+			// Rating not found is OK, just return details without rating
+			return details, nil
+		}
+		// Other errors should be returned
+		return nil, err
+	}
+	
+	details.Rating = &rating
 	return details, nil
 }

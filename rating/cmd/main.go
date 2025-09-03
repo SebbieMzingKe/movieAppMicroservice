@@ -38,7 +38,7 @@ func main() {
 	flag.IntVar(&port, "port", 8082, "API handler port")
 	flag.Parse()
 
-	f, err := os.Open("home/seb/Desktop/projects/movvieApp/rating/configs/base.yaml")
+	f, err := os.Open("/home/seb/Desktop/projects/movvieApp/rating/configs/base.yaml")
 
 	if err != nil {
 		panic(err)
@@ -67,7 +67,8 @@ func main() {
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
-	registry, err := consul.NewRegistry("consul-consul-server:8500")
+	// registry, err := consul.NewRegistry("consul-consul-server:8500")
+	registry, err := consul.NewRegistry("localhost:8500")
 
 	if err != nil {
 		log.Panicln("consul", err)

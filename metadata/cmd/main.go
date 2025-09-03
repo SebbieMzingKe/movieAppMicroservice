@@ -51,7 +51,8 @@ func main() {
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
-	registry, err := consul.NewRegistry("consul-consul-server:8500")
+	// registry, err := consul.NewRegistry("consul-consul-server:8500")
+	registry, err := consul.NewRegistry("localhost:8500")
 
 	if err != nil {
 		panic(err)
@@ -77,7 +78,7 @@ func main() {
 
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
-	f, err := os.Open("home/seb/Desktop/projects/movvieApp/metadata/configs/base.yaml")
+	f, err := os.Open("/home/seb/Desktop/projects/movvieApp/metadata/configs/base.yaml")
 	if err != nil {
 		panic(err)
 	}
