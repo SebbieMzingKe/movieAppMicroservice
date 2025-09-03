@@ -11,7 +11,10 @@ import (
 
 // NewOtlpGrpcProvider returns a new gRPC-based OTLP tracing provider.
 func NewOtlpGrpcProvider(ctx context.Context, url string, serviceName string) (*trace.TracerProvider, error) {
-	exp, err := otlptracegrpc.New(ctx, otlptracegrpc.WithEndpoint(url))
+	exp, err := otlptracegrpc.New(ctx,
+		otlptracegrpc.WithEndpoint(url),
+		otlptracegrpc.WithInsecure(),
+	)
 	if err != nil {
 		return nil, err
 	}
