@@ -2,6 +2,7 @@ package main
 
 type serviceConfig struct {
 	ApiConfig apiConfig `yaml:"api"`
+	Jaeger jaegerConfig `yaml:"jaeger"`
 }
 
 type apiConfig struct {

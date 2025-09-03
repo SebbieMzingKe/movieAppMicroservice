@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"gopkg.in/yaml.v3"
@@ -18,7 +20,9 @@ import (
 	"movieapp.com/metadata/internal/repository/memory"
 	"movieapp.com/pkg/discovery"
 	"movieapp.com/pkg/discovery/consul"
+	"movieapp.com/pkg/tracing"
 )
+
 const serviceName = "metadata"
 
 func main() {
@@ -28,13 +32,31 @@ func main() {
 	flag.IntVar(&port, "port", 8081, "API handler port")
 	flag.Parse()
 
+	var cfg serviceConfig
+
 	log.Printf("Starting the metadata service on port %d", port)
+
+	tp, err := tracing.NewOtlpGrpcProvider(context.Background(), cfg.Jaeger.URL, serviceName)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer func() {
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
 	registry, err := consul.NewRegistry("consul-consul-server:8500")
 
 	if err != nil {
 		panic(err)
 	}
-	
+
 	ctx := context.Background()
 
 	instanceID := discovery.GenerateInstanceID(serviceName)
@@ -55,13 +77,11 @@ func main() {
 
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
-	f, err := os.Open("base.yaml")
+	f, err := os.Open("home/seb/Desktop/projects/movvieApp/metadata/configs/base.yaml")
 	if err != nil {
 		panic(err)
 	}
 	defer f.Close()
-
-	var cfg serviceConfig
 
 	if err := yaml.NewDecoder(f).Decode(&cfg); err != nil {
 		panic(err)
@@ -81,7 +101,7 @@ func main() {
 	srv.Serve(lis)
 
 	reflection.Register(srv)
-	
+
 	if err := srv.Serve(lis); err != nil {
 		panic(err)
 	}
