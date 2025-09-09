@@ -3,3 +3,6 @@ api:
 
 jaeger:
   url: localhost:4317
+
+prometheus:
+  metricsPoint: 8091
