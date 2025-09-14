@@ -13,8 +13,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/uber-go/tally"
+	"github.com/uber-go/tally/prometheus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"gopkg.in/yaml.v3"
@@ -66,6 +69,28 @@ func main() {
 
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	// setting up service alerting
+	reporter := prometheus.NewReporter(prometheus.Options{})
+	scope, closer := tally.NewRootScope(tally.ScopeOptions{
+		Tags:           map[string]string{"service": "rating"},
+		CachedReporter: reporter,
+	}, 10*time.Second)
+	defer closer.Close()
+
+	http.Handle("/metrics", reporter.HTTPHandler())
+
+	go func() {
+		if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.Prometheus.URL), nil); err != nil {
+			log.Fatal("failed to start the metrics handler", zap.Error(err))
+		}
+	}()
+
+	counter := scope.Tagged(map[string]string{
+		"service": "rating",
+	}).Counter("service started")
+	counter.Inc(1)
+
 
 	// registry, err := consul.NewRegistry("consul-consul-server:8500")
 	registry, err := consul.NewRegistry("localhost:8500")

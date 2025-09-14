@@ -1,8 +1,9 @@
 package main
 
 type config struct {
-	ApiConfig apiConfig `yaml:"api"`
-	Jaeger jaegerConfig `yaml:"jaeger"`
+	ApiConfig  apiConfig        `yaml:"api"`
+	Jaeger     jaegerConfig     `yaml:"jaeger"`
+	Prometheus prometheusConfig `yaml:"prometheus"`
 }
 
 type apiConfig struct {
@@ -10,5 +11,9 @@ type apiConfig struct {
 }
 
 type jaegerConfig struct {
+	URL string `yaml:"url"`
+}
+
+type prometheusConfig struct {
 	URL string `yaml:"url"`
 }
