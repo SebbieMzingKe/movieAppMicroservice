@@ -24,19 +24,18 @@ scrape_configs:
   metrics_path: /metrics
   scheme: http
   follow_redirects: true
-  enable_http2: true
   static_configs:
   - targets:
-    - localhost: 9090
+    - "localhost: 9090"
   - targets:
-    - host.docker.internal: 8091
+    - "host.docker.internal: 8091"
     labels:
       service: metadata
   - targets:
-    - host.docker.internal: 8092
+    - "host.docker.internal:8092"
     labels:
       service: rating
   - targets:
-    - host.docker.internal: 8093
+    - "host.docker.internal: 8093"
     labels:
       service: movie

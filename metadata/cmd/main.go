@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"crypto/md5"
+	"crypto/rand"
 	"flag"
 	"fmt"
 	"log"
 	"net"
+	_ "net/http/pprof"
 	"net/http"
 	"os"
 	"time"
@@ -33,12 +36,28 @@ func main() {
 
 	var port int
 
+	simulateCPULoad := flag.Bool("simulatecpuload",
+		false, "simulate cpu load for profiling")
+
 	flag.IntVar(&port, "port", 8081, "API handler port")
 	flag.Parse()
 
 	var cfg serviceConfig
 
 	log.Printf("Starting the metadata service on port %d", port)
+
+
+		// flag.Parse()
+		if *simulateCPULoad {
+			go heavyOperation()
+		}
+	
+	go func () {
+		if err := http.ListenAndServe(":6060", nil); err != nil {
+			log.Fatal("failed to start profiler handler",
+		zap.Error(err))
+		}
+	}()
 
 	tp, err := tracing.NewOtlpGrpcProvider(context.Background(), cfg.Jaeger.URL, serviceName)
 
@@ -136,5 +155,13 @@ func main() {
 
 	if err := srv.Serve(lis); err != nil {
 		panic(err)
+	}
+}
+
+func heavyOperation() {
+	for {
+		token := make([]byte, 1024)
+		rand.Read(token)
+		md5.New().Write(token)
 	}
 }
